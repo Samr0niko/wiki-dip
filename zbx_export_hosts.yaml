@@ -1,0 +1,46 @@
+zabbix_export:
+  version: '7.0'
+  host_groups:
+    - uuid: dc579cd7a1a34222933f24f52a68bcd8
+      name: 'Linux servers'
+  hosts:
+    - host: 'master'
+      name: 'master'
+      templates:
+        - name: 'Linux by Zabbix agent'
+      groups:
+        - name: 'Linux servers'
+      interfaces:
+        - ip: 10.130.0.103
+          interface_ref: if1
+      inventory_mode: DISABLED
+    - host: 'wiki'
+      name: 'wiki'
+      templates:
+        - name: 'Linux by Zabbix agent'
+      groups:
+        - name: 'Linux servers'
+      interfaces:
+        - ip: 10.130.0.101
+          interface_ref: if1
+      inventory_mode: DISABLED
+    - host: 'wiki-replica'
+      name: 'wiki-replica'
+      templates:
+        - name: 'Linux by Zabbix agent'
+      groups:
+        - name: 'Linux servers'
+      interfaces:
+        - ip: 10.129.0.101
+          interface_ref: if1
+      inventory_mode: DISABLED
+    - host: 'proxy'
+      name: 'proxy'
+      templates:
+        - name: 'Linux by Zabbix agent'
+      groups:
+        - name: 'Linux servers'
+      interfaces:
+        - ip: 10.130.0.100
+          interface_ref: if1
+      inventory_mode: DISABLED

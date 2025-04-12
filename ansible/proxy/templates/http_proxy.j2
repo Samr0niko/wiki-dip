@@ -1,0 +1,19 @@
+upstream backend {
+    server {{ hostvars[groups['wiki'][0]].ansible_host }} max_fails=1 fail_timeout=1s weight=3;
+    server {{ hostvars[groups['wiki'][1]].ansible_host }} max_fails=1 fail_timeout=1s weight=2;
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://backend;
+        include /etc/nginx/proxy_params;
+        proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
+        proxy_next_upstream_timeout 0s; # немедленное переключение
+        proxy_next_upstream_tries 1;
+        proxy_connect_timeout 3s;
+        proxy_send_timeout 3s;
+        proxy_read_timeout 5s;
+    }
+}

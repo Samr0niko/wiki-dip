@@ -1,0 +1,153 @@
+---
+# tasks file for mediawiki
+
+# Установка основных пакетов
+- name: Обновление apt
+  apt:
+    update_cache: yes
+
+- name: Установка программ
+  apt:
+    name: "{{ packages_to_install }}"
+    state: present
+
+# Настройка NFS
+- name: Создание директории для монтирования NFS
+  file:
+    path: "{{ local_mount }}"
+    state: directory
+    mode: '0775'
+  async: 10  # Максимальное время выполнения (сек)
+  poll: 2
+  ignore_errors: yes
+
+- name: Добавление записи в fstab
+  template:
+    src: fstab.j2
+    dest: /etc/fstab
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Принудительное размонтирование (для предотвращение зависаний)
+  command: umount -f -l "{{ local_mount }}"
+  ignore_errors: yes
+
+- name: Монтирование NFS
+  mount:
+    path: "{{ local_mount }}"
+    src: "{{ hostvars['proxy'].ansible_host }}:{{ nfs_share }}"
+    fstype: nfs
+    state: mounted
+
+- name: Настройка прав на NFS директорию
+  file:
+    path: "{{ local_mount }}"
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+# Установка MediaWiki
+- name: Загрузка MediaWiki
+  ansible.builtin.get_url:
+    url: "https://releases.wikimedia.org/mediawiki/1.42/mediawiki-1.42.1.tar.gz"
+    dest: /var/www/mediawiki.tar.gz
+  tags: install
+
+- name: Распаковка MediaWiki
+  unarchive:
+    src: /var/www/mediawiki.tar.gz
+    dest: /var/www/
+    remote_src: yes
+  tags: install
+
+- name: Переименование директории
+  command: mv /var/www/mediawiki-1.42.1 /var/www/wiki
+  tags: install
+  ignore_errors: yes
+
+# Настройка прав
+- name: Настройка прав на директорию wiki
+  file:
+    path: /var/www/wiki
+    owner: www-data
+    group: www-data
+    recurse: yes
+    mode: '0755'
+
+# Копирование конфигурационных файлов
+- name: Копирование LocalSettings.php
+  template:
+    src: LocalSettings.j2
+    dest: /var/www/wiki/LocalSettings.php
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+# logo
+- name: Переместить файл c logo
+  copy:
+    src: logo.png
+    dest: /var/www/wiki/resources/assets/logo.png
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+- name: Удаление дефолтных конфигов nginx
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/nginx/sites-enabled/default
+    - /etc/nginx/sites-available/default
+
+- name: Настройка конфига nginx
+  template:
+    src: wiki.j2
+    dest: /etc/nginx/sites-available/wiki
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Активация сайта wiki
+  file:
+    src: /etc/nginx/sites-available/wiki
+    dest: /etc/nginx/sites-enabled/wiki
+    state: link
+  notify: "Nginx Reloader"
+
+# скрипт для смены мастера
+- name: Перемещение скрипта
+  template:
+    src: check_master.j2
+    dest: /usr/local/bin/check_master.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Перемещение check_master.timer
+  copy:
+    src: check_master.timer
+    dest: /etc/systemd/system/check_master.timer
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Перемещение check_master.service 
+  copy:
+    src: check_master.service
+    dest: /etc/systemd/system/ 
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: перезапуск демона системд
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: включение и запуск таймера
+  ansible.builtin.systemd:
+    name: check_master.timer
+    enabled: yes
+    state: started
+

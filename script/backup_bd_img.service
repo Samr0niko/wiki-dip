@@ -1,0 +1,6 @@
+[Unit]
+Description=Резервное копирование PostgreSQL и wiki-images
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup_bd_img.sh

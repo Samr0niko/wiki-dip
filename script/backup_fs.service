@@ -1,0 +1,6 @@
+[Unit]
+Description=Резервное копирование фс вики
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup_fs.sh

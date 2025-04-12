@@ -1,0 +1,63 @@
+--- 
+- name: Настройка master
+  hosts: master
+  roles:
+    - role: master
+  tags:
+    - master
+
+- name: Настройка проксирующего Nginx + nfs
+  hosts: proxy
+  roles:
+    - role: proxy
+    - role: backuser
+  tags:
+    - proxy
+
+- name: Настройка mediawiki
+  hosts: wiki
+  roles:
+    - role: mediawiki
+  tags:
+    - mediawiki
+
+- name: Настройка replication
+  hosts: replica
+  roles:
+    - role: replication
+    - role: backuser
+  tags:
+    - replica
+
+- name: Собрать уникальные IP и пометить хосты для обработки
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Собрать список уникальных IP (ansible_host)
+      run_once: true
+      set_fact:
+        unique_ips: "{{ groups['all'] | map('extract', hostvars, 'ansible_host') | list | unique }}"
+
+    - name: Пометить хосты, чей IP входит в уникальный список и он первый с этим IP
+      set_fact:
+        is_primary_for_ip: "{{ hostvars | dict2items | selectattr('value.ansible_host', 'equalto', ansible_host) | map(attribute='key') | list | first == inventory_hostname }}"
+
+- name: Настройка времени мск
+  hosts: all # Будет работать на всех уникальных узлах
+  gather_facts: false
+  tasks: 
+    - name: Установка пояса
+      timezone:
+        name: "Europe/Moscow"
+      when: is_primary_for_ip | default(false)
+  tags:
+    - data
+
+- name: Настройка zabbix-agent
+  hosts: all # Будет работать на всех уникальных узлах
+  gather_facts: false 
+  roles:
+    - role: zabbix_agent
+      when: is_primary_for_ip | default(false)
+  tags:
+    - zabbix_agent

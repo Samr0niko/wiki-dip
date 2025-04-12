@@ -1,0 +1,31 @@
+#!/bin/bash
+MASTER_IP="{{ hostvars['master'].ansible_host }}"
+REPLICA_IP="{{ hostvars['replica'].ansible_host }}"
+FAIL_FILE="/tmp/count"
+
+if ping -c 1 "$MASTER_IP" > /dev/null 2>&1; then
+    # Сервер доступен – сбрасываем предыдущие сбои
+    [ -f "$FAIL_FILE" ] && rm -f "$FAIL_FILE"
+    echo "Мастер $MASTER_IP доступен"
+    exit 0
+else
+    if [ -f "$FAIL_FILE" ]; then
+        # Файл уже существует то это второй подряд сбой
+        # Команда для повышения роли реплики до мастера.
+
+        echo "Мастер $MASTER_IP не доступен в второй раз"
+
+        if ! sudo -u postgres pg_ctlcluster 14 main promote; then
+            echo "Ошибка при повышении реплики" >&2
+        fi
+
+        rm -f "$FAIL_FILE"
+        sudo sed -i "s/\$wgDBserver = '${MASTER_IP}';/\$wgDBserver = '${REPLICA_IP}';/" /var/www/wiki/LocalSettings.php
+        sudo nginx -s reload
+        sudo systemctl stop check_master.timer 
+        echo "Скрипт закончил свою работу и остановлен"
+    else
+        touch "$FAIL_FILE"
+        echo "Мастер $MASTER_IP не доступен в первый раз"
+    fi
+fi

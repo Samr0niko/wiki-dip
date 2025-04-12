@@ -1,0 +1,9 @@
+[Unit]
+Description=удаление ежедневно в 02:00
+
+[Timer]
+OnCalendar=Daily 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

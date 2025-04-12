@@ -1,0 +1,9 @@
+[Unit]
+Description=Запуск backup_wiki_www.sh по расписанию: Пн–Пт 01:00
+
+[Timer]
+OnCalendar=Mon..Fri 01:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

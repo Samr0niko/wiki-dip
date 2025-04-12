@@ -1,0 +1,11 @@
+[Unit]
+Description=Таймер для проверки мастер БД (каждые 90 секунд)
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=90s
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

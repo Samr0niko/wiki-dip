@@ -1,0 +1,13 @@
+upstream zabbix {
+    server {{ ip_zabbix }}:8090;
+}
+
+server {
+    listen 8090;
+    server_name {{ ip_front }};
+
+    location / {
+        proxy_pass http://zabbix;
+        include /etc/nginx/proxy_params;
+    }
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Пуск по расписанию: Пн–Пт 13:30 и 19:30
+
+[Timer]
+OnCalendar=Mon..Fri 13:30:00
+OnCalendar=Mon..Fri 19:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

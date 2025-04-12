@@ -1,0 +1,53 @@
+---
+# tasks file for master
+# Установка основных пакетов
+- name: Обновление apt
+  apt:
+    update_cache: yes
+
+- name: Установка программ
+  apt:
+    name: postgresql
+    state: present
+
+# Загрузка данных из бэкапа
+- name: Копирование backup.sql на сервер
+  ansible.builtin.copy:
+    src: backup.sql
+    dest: /tmp/backup.sql
+    owner: postgres
+    group: postgres
+    mode: '0777'
+    
+- name: Выполнение SQL скрипта от имени postgres
+  ansible.builtin.shell: sudo -u postgres psql -U postgres -f /tmp/backup.sql
+  args:
+    executable: /bin/bash
+  register: psql_result
+  failed_when: 
+    - "psql_result.rc != 0"
+    - "'ERROR' in psql_result.stdout"
+
+# настройка конфига
+- name: Добавить блок строк в конец файла
+  blockinfile:
+    path: /etc/postgresql/14/main/pg_hba.conf
+    block: |
+      host    my_wiki         wikiuser       {{ hostvars[groups['wiki'][0]].ansible_host }}/32          scram-sha-256
+      host    my_wiki         wikiuser       {{ hostvars[groups['wiki'][1]].ansible_host }}/32          scram-sha-256
+      host    all             postgres       {{ ip_zabbix }}/32          trust
+      host    replication     syncuser       {{ hostvars['replica'].ansible_host }}/32          md5
+    insertafter: EOF
+
+- name: Добавить блок строк в конец файла
+  blockinfile:
+    path: /etc/postgresql/14/main/postgresql.conf
+    block: |
+      listen_addresses = '*'
+      wal_level = replica
+      max_wal_senders = 5
+      wal_keep_size = 100MB
+      max_slot_wal_keep_size = 50MB
+    insertafter: EOF
+  notify: restart postgresql
+

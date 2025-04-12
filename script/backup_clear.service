@@ -1,0 +1,6 @@
+[Unit]
+Description=Удаление файлов старше 7 дней
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup_clear.sh

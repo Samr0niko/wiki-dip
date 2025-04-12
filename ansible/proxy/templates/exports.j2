@@ -1,0 +1,2 @@
+{{ nfs_share }}    {{ hostvars[groups['wiki'][1]].ansible_host }}/32(rw,sync,no_root_squash,no_subtree_check)
+{{ nfs_share }}    {{ hostvars[groups['wiki'][0]].ansible_host }}/32(rw,sync,no_root_squash,no_subtree_check)

@@ -1,0 +1,6 @@
+[Unit]
+Description=Проверка доступности мастер БД и промоут реплики
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/check_master.sh

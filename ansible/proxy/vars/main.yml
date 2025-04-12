@@ -1,0 +1,6 @@
+---
+# vars file for proxy
+packages_to_install:
+ - nginx 
+ - nfs-kernel-server 
+ - nfs-common

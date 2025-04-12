@@ -1,0 +1,23 @@
+server {
+    listen 80;
+    root /var/www/wiki;
+    index index.php;
+    server_name _;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+    }
+
+    location /wiki-images {
+        alias {{ local_mount }};
+    }
+
+    location ~* ^/resources/(assets|lib|src) {
+        try_files $uri /index.php;
+    }
+}

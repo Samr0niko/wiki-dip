@@ -1,0 +1,25 @@
+---
+# tasks file for backuser
+# пользовательь для бэкапа 
+- name: Создать пользователя backuser
+  user:
+    name: backuser
+    shell: /bin/bash
+    create_home: yes
+    state: present
+
+- name: Создать .ssh для backuser
+  file:
+    path: /home/backuser/.ssh
+    state: directory
+    mode: '0700'
+    owner: backuser
+    group: backuser
+
+- name: Переместить файл authorized_keys в каталог .ssh
+  copy:
+    src: authorized_keys
+    dest: /home/backuser/.ssh/authorized_keys
+    owner: backuser
+    group: backuser
+    mode: '0600'

@@ -1,0 +1,26 @@
+---
+all:
+  hosts:
+    replica:
+      ansible_host: 10.129.0.101
+    proxy:
+      ansible_host: 10.130.0.100
+    master:
+      ansible_host: 10.130.0.103
+  children:
+    wiki:
+      hosts:
+        wiki1:
+          ansible_host: 10.130.0.101
+        wiki2:
+          ansible_host: 10.129.0.101
+  vars: 
+    ansible_user: "sam"
+    ansible_ssh_private_key_file: "/home/sam/.ssh/id_ecdsa"  # Путь к приватному ключу
+    connection_protocol: ssh
+    ansible_ssh_common_args: '-o ProxyJump=51.250.33.9'
+    ansible_become: true 
+    ip_zabbix: 10.129.0.100
+    ip_front: 51.250.33.9
+    nfs_share: "/srv/shares/wiki-images"
+    local_mount: "/mnt/wiki-images"

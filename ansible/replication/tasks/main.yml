@@ -1,0 +1,48 @@
+---
+# tasks file for replication
+# Установка основных пакетов
+- name: Обновление apt
+  apt:
+    update_cache: yes
+
+- name: Установка программ
+  apt:
+    name: postgresql
+    state: present
+
+# настрйока репликации
+- name: Остановить PostgreSQL
+  systemd:
+    name: postgresql
+    state: stopped
+
+- name: Удаление данных
+  ansible.builtin.file:
+    path: /var/lib/postgresql/14/main/
+    state: absent
+
+- name: Выполнить pg_basebackup от имени пользователя postgres
+  command: sudo -i -u postgres env PGPASSWORD="{{ postgres_replica_password }}" pg_basebackup -h {{ hostvars['master'].ansible_host }} -D /var/lib/postgresql/14/main -U syncuser -P -v -R
+
+# конфиги
+- name: Добавить блок строк в конец файла
+  blockinfile:
+    path: /etc/postgresql/14/main/postgresql.conf
+    block: |
+      listen_addresses = '*'
+      hot_standby = on
+    insertafter: EOF
+
+- name: Добавить блок строк в конец файла
+  blockinfile:
+    path: /etc/postgresql/14/main/pg_hba.conf
+    block: |
+      host    my_wiki         wikiuser       {{ hostvars[groups['wiki'][0]].ansible_host }}/32          scram-sha-256
+      host    my_wiki         wikiuser       {{ hostvars[groups['wiki'][1]].ansible_host }}/32          scram-sha-256
+      host    all             postgres       {{ ip_zabbix }}/32          trust
+    insertafter: EOF
+
+- name: Запустить PostgreSQL
+  systemd:
+    name: postgresql
+    state: started
